@@ -1,0 +1,10 @@
+.form {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+}
+
+.error {
+    font-size: 12;
+    color: red;
+}

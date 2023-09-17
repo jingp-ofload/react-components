@@ -1,0 +1,170 @@
+import useValidation, { ValidatorContextValue } from './useValidation';
+import React from 'react';
+import { act } from '@testing-library/react';
+import { renderHook } from '@testing-library/react-hooks';
+
+import * as yup from 'yup';
+
+describe('useValidation', () => {
+    let result: React.RefObject<ValidatorContextValue>;
+    let unmount: () => void;
+    let rerender: (rerenderCallbackProps: any) => void;
+
+    beforeEach(() => {
+        ({ result, rerender, unmount } = renderHook(useValidation, {
+            initialProps: {
+                user: {
+                    firstName: '',
+                    lastName: '',
+                    age: 0,
+                },
+                amount: 0,
+            },
+        }));
+
+        act(() => {
+            result.current?.registerValidators({
+                'user.firstName': (fieldName: string, value: string) => (!!value ? '' : 'First name is required'),
+                'user.lastName': (fieldName: string, value: string) => (!!value ? '' : 'Last name is required'),
+                'user.age': (fieldName: string, age: number) => (age > 0 ? '' : 'Age should be greater than 0'),
+                'amount': (fieldName: string, amount: number) => (amount > 0 ? '' : 'Amount should be greater than 0'),
+            });
+        });
+    });
+
+    afterEach(() => {
+        unmount();
+    });
+
+    test('hook returns correct initial value', () => {
+        const { result } = renderHook(() => useValidation({}));
+
+        expect(result.current).toMatchObject({
+            errors: {},
+            isValid: true,
+        });
+    });
+
+    it('should validate form data when validator is registered', () => {
+        expect(result.current?.errors).toEqual({
+            'user.firstName': 'First name is required',
+            'user.lastName': 'Last name is required',
+            'user.age': 'Age should be greater than 0',
+            'amount': 'Amount should be greater than 0',
+        });
+    });
+
+    test('can set all fields to be not touched', () => {
+        act(() => {
+            result.current?.setTouched('ALL_FIELDS', false);
+        });
+
+        expect(result.current?.errors).toEqual({
+            'user.firstName': '',
+            'user.lastName': '',
+            'user.age': '',
+            'amount': '',
+        });
+    });
+
+    test('when touched field are set, it should only validate touched fields', () => {
+        act(() => {
+            result.current?.setTouched(['user.age'], true);
+        });
+
+        expect(result.current?.errors).toEqual({
+            'user.age': 'Age should be greater than 0',
+        });
+    });
+
+    test('Can set validation error coming from server', () => {
+        act(() => {
+            result.current?.setServerErrors({ 'user.age': 'age should ate least be 16' });
+        });
+
+        expect(result.current?.errors).toEqual({
+            'user.age': 'age should ate least be 16',
+        });
+    });
+
+    test('isValid is false initially and then become true when all fields are valid', () => {
+        expect(result.current?.isValid).toBeFalsy();
+
+        act(() => {
+            rerender({
+                user: {
+                    firstName: 'Dev',
+                    lastName: 'Khadka',
+                    age: 33,
+                },
+                amount: 40,
+            });
+        });
+
+        expect(result.current?.isValid).toBeTruthy();
+    });
+});
+
+describe('useValidation with yup schema', () => {
+    let result: React.RefObject<ValidatorContextValue>;
+    let unmount: () => void;
+    let rerender: (rerenderCallbackProps: any) => void;
+
+    beforeEach(() => {
+        ({ result, rerender, unmount } = renderHook(useValidation, {
+            initialProps: {
+                user: {
+                    firstName: '',
+                    lastName: '',
+                    email: '',
+                },
+                amount: null,
+            },
+        }));
+
+        act(() => {
+            result.current?.registerValidators({
+                'user.firstName': yup
+                    .string()
+                    .required('First name is required')
+                    .min(2, 'First name should be at least 2 letter'),
+                'user.lastName': yup
+                    .string()
+                    .required('Last name is required')
+                    .min(2, 'Last name should be at least 2 letter'),
+                'user.email': yup.string().required('Email is required').email('Must be a valid email address'),
+                'amount': yup
+                    .number()
+                    .required('Amount is required')
+                    .min(100, 'amount must be more than 100')
+                    .max(10000, 'amount must be less than 10000'),
+            });
+        });
+    });
+
+    afterEach(() => {
+        unmount();
+    });
+
+    it('should validate empty form data when validator is registered', () => {
+        expect(result.current?.errors).toEqual({
+            'user.firstName': 'First name is required',
+            'user.lastName': 'Last name is required',
+            'user.email': 'Email is required',
+            'amount': 'Amount is required',
+        });
+    });
+
+    it('should validate invalid form data when validator is registered', () => {
+        act(() => {
+            rerender({ user: { firstName: 'jo', lastName: 'T', email: 'wrong-email' }, amount: 150 });
+        });
+
+        expect(result.current?.errors).toEqual({
+            'user.firstName': '',
+            'user.lastName': 'Last name should be at least 2 letter',
+            'user.email': 'Must be a valid email address',
+            'amount': '',
+        });
+    });
+});
