@@ -1,14 +1,14 @@
 {
   "name": "@devnepal/use-validation",
-  "version": "1.0.3",
+  "version": "1.0.7",
   "description": "Easy and flexible form validation hook. This hooks support validation for multi step form.",
   "type": "module",
-  "main": "cjs/index.cjs",
-  "module": "esm/index.js",
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/esm/index.js",
+  "typings": "dist/index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "rm -rf dist && rollup -c",
-    "release": "npm run build && npm publish",
+    "build": "rm -rf dist && rollup -c && node modifyPackageJson.cjs",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },
@@ -46,7 +46,6 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "rollup": "^3.29.2",
-    "rollup-plugin-copy": "^3.5.0",
     "rollup-plugin-dts": "^6.0.2",
     "rollup-plugin-json": "^4.0.0",
     "rollup-plugin-peer-deps-external": "^2.2.4",
@@ -61,6 +60,7 @@
   },
   "dependencies": {
     "object-path-immutable": "^4.1.2",
+    "rollup-plugin-copy": "^3.5.0",
     "yup": "^1.2.0"
   },
   "publishConfig": {
