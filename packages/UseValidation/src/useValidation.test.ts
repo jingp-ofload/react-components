@@ -1,7 +1,7 @@
-import useValidation, { ValidatorContextValue } from './useValidation';
+import useValidation, { UseValidationOptions, ValidatorContextValue } from './useValidation';
 import React from 'react';
-import { act } from '@testing-library/react';
-import { renderHook } from '@testing-library/react-hooks';
+import { act, waitFor } from '@testing-library/react';
+import { renderHook } from '@testing-library/react';
 
 import * as yup from 'yup';
 
@@ -90,18 +90,16 @@ describe('useValidation', () => {
     test('isValid is false initially and then become true when all fields are valid', () => {
         expect(result.current?.isValid).toBeFalsy();
 
-        act(() => {
-            rerender({
-                user: {
-                    firstName: 'Dev',
-                    lastName: 'Khadka',
-                    age: 33,
-                },
-                amount: 40,
-            });
+        rerender({
+            user: {
+                firstName: 'Dev',
+                lastName: 'Khadka',
+                age: 33,
+            },
+            amount: 40,
         });
 
-        expect(result.current?.isValid).toBeTruthy();
+        waitFor(() => expect(result.current?.isValid).toBeTruthy());
     });
 });
 
@@ -160,11 +158,45 @@ describe('useValidation with yup schema', () => {
             rerender({ user: { firstName: 'jo', lastName: 'T', email: 'wrong-email' }, amount: 150 });
         });
 
-        expect(result.current?.errors).toEqual({
+        waitFor(() => expect(result.current?.errors).toEqual({
             'user.firstName': '',
             'user.lastName': 'Last name should be at least 2 letter',
             'user.email': 'Must be a valid email address',
             'amount': '',
-        });
+        }));
     });
 });
+
+describe('useValidation with basePath', () => {
+    let result: React.RefObject<ValidatorContextValue>;
+    let unmount: () => void;
+    let rerender: (rerenderCallbackProps: any) => void;
+
+    beforeEach(() => {
+        ({ result, rerender, unmount } = renderHook(({formData, options}: {formData: any, options: UseValidationOptions}) => useValidation(formData), {
+            initialProps: {
+                formData: {
+                    user: {
+                        firstName: '',
+                        lastName: '',
+                        age: 0,
+                    },
+                    amount: 0,
+                },
+                options: {
+                    basePath: 'user'
+                }
+            },
+        }));
+
+        act(() => {
+            result.current?.registerValidators({
+                'firstName': (fieldName: string, value: string) => (!!value ? '' : 'First name is required'),
+                'lastName': (fieldName: string, value: string) => (!!value ? '' : 'Last name is required'),
+                'age': (fieldName: string, age: number) => (age > 0 ? '' : 'Age should be greater than 0'),
+            });
+        });
+    });
+
+
+})

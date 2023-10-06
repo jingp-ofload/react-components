@@ -6,17 +6,8 @@ export type Validator = ((flatFieldName: string, value: any, formData: Object) =
 type ValidatorsMap = Record<string, Validator>;
 type TouchedFields = Record<string, boolean>;
 
-export interface ValidatorContextValue {
-    errors: Record<string, string>;
-    setServerErrors: (errors: Record<string, string>) => void;
-    setTouched: (fields: Array<string> | 'ALL_FIELDS', isTouched: boolean) => void;
-    getFormValue: (flatPath: string) => any;
-    registerValidators: (validators: ValidatorsMap) => () => void;
-    validate: (flatPath: string, valueToValidate?: any) => string;
-    isValid: boolean;
-}
-
-const useValidation = (formData: Record<string, any>): ValidatorContextValue => {
+const useValidation = (formData: Record<string, any>, options: Partial<UseValidationOptions> = defaultOptions): ValidatorContextValue => {
+    const { basePath = '' } = options;
     const initialErrors: Record<string, string> = {};
 
     const [localErrors, setLocalErrors] = useState(initialErrors);
@@ -108,7 +99,7 @@ const useValidation = (formData: Record<string, any>): ValidatorContextValue => 
     }
 
     function getFormValue(flatFieldName: string) {
-        return getValueOfPath(formData, flatFieldName);
+        return getValueOfPath(formData, `${basePath}.${flatFieldName}`);
     }
 
     /**
@@ -153,5 +144,23 @@ const useValidation = (formData: Record<string, any>): ValidatorContextValue => 
         isValid,
     };
 };
+
+export interface ValidatorContextValue {
+    errors: Record<string, string>;
+    setServerErrors: (errors: Record<string, string>) => void;
+    setTouched: (fields: Array<string> | 'ALL_FIELDS', isTouched: boolean) => void;
+    getFormValue: (flatPath: string) => any;
+    registerValidators: (validators: ValidatorsMap) => () => void;
+    validate: (flatPath: string, valueToValidate?: any) => string;
+    isValid: boolean;
+}
+
+export interface UseValidationOptions {
+    basePath: string;
+}
+
+const defaultOptions: UseValidationOptions = {
+    basePath: ''
+}
 
 export default useValidation;
