@@ -1,70 +1,34 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as immutable from 'object-path-immutable';
+import useValidation from "../validation/useValidation";
+import Publisher, { usePublishedState } from "../utils/Publisher";
+import { getSingletonInstance } from "../utils/SingletonStore";
 
-const weakMap = new WeakMap();
-
-class FormHelper<TFormData> {
-    private subscribers = new Set<React.Dispatch<React.SetStateAction<TFormData>>>();
-    #formData: TFormData;
-
-    constructor(ref: Object, initialData: TFormData) {
-        weakMap.set(ref, this);
-        this.#formData = initialData;
-    }
-
-    public get formData() {
-        return this.#formData;
-    }
-
-    resetForm(initialData: TFormData) {
-        this.#formData = initialData;
-        this.subscribers.forEach((subscriber) => {
-            subscriber(initialData)
-        })
-    };
-
-    setFieldValue(dottedPath: string, value: any) {
-        this.#formData = immutable.set(this.#formData, dottedPath, value)
-        this.subscribers.forEach((subscriber) => {
-            subscriber(this.#formData)
-        })
-    };
-
-    getFieldValue(data: TFormData, dottedPath: string) {
-        return immutable.get(data, dottedPath)
-    };
-
-    subscribe(onChanged: React.Dispatch<React.SetStateAction<TFormData>>) {
-        this.subscribers.add(onChanged);
-
-        return () => {this.subscribers.delete(onChanged)}
-    }
+function getFieldValue(formData: any, baseDottedPath: string) {
+    return immutable.get(formData, baseDottedPath)
 }
 
-
-const useFormData = <TFormData>(uniqueId: Object, initialData: TFormData, baseDottedPath?: string) => {
-    const [fullFormData, setFormData] = useState<TFormData>(initialData);
-    const refObj: FormHelper<TFormData> = weakMap.has(uniqueId) ? weakMap.get(uniqueId) : new FormHelper(uniqueId, fullFormData);
-
-    useEffect(() => {
-        setFormData(refObj.formData)
-        return refObj.subscribe(setFormData)
-    }, [])
+const useFormData = <TFormData>(initialData: TFormData, baseDottedPath?: string, reuseId?: object) => {
+    const localId = useRef({});
+    const savedValues = getSingletonInstance(reuseId || localId.current, () => ({formData: initialData, publisher: new Publisher()}));
+    const [fullFormData, setFormData] = usePublishedState('formData', savedValues)
 
     const currentFormData = useMemo(() => {
         if (!baseDottedPath) {
             return fullFormData as TFormData;
         }
 
-        return refObj.getFieldValue(fullFormData, baseDottedPath);
+        return getFieldValue(fullFormData, baseDottedPath);
     }, [baseDottedPath, fullFormData]);
 
     const setFieldValue = (relativeDottedPath: string, value:any) => {
-        refObj.setFieldValue(baseDottedPath ? `${baseDottedPath}.${relativeDottedPath}` : relativeDottedPath, value);
+        const dottedPath = baseDottedPath ? `${baseDottedPath}.${relativeDottedPath}` : relativeDottedPath;
+        const newFormData = immutable.set(savedValues.formData, dottedPath, value);
+        setFormData(newFormData);
     }
 
     const resetForm = () => {
-        refObj.resetForm(initialData)
+        setFormData(initialData)
     }
 
     return {
@@ -74,12 +38,18 @@ const useFormData = <TFormData>(uniqueId: Object, initialData: TFormData, baseDo
     };
 }
 
-const CreateFormDataHook = (initialData: any) => {
-    const uniqueId = Symbol();
-    const newHook = (<TFormData>(baseDottedPath?: string) => useFormData<TFormData>(uniqueId, initialData, baseDottedPath));
+export const CreateFormDataHook = (initialData: any) => {
+    const reuseId = {};
 
-    return newHook;
+    return (<TFormData>(baseDottedPath?: string) => useFormData<TFormData>(initialData, baseDottedPath, reuseId));
 }
 
+export const CreateFormValidationHook = <TFormData>(useFormDataHook: ReturnType<typeof CreateFormDataHook>) => {
+    const reuseId = {};
 
-export default CreateFormDataHook;
+    return (dottedBasePath?: string) => {
+        const { formData } = useFormDataHook<TFormData>();
+
+        return useValidation(formData as Record<string, any>, { basePath: dottedBasePath }, reuseId)
+    }
+}

@@ -1,21 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="jest tests" tests="8" failures="0" errors="0" time="1.139">
-  <testsuite name="useValidation" errors="0" failures="0" skipped="0" timestamp="2023-09-23T17:14:57" time="0.757" tests="8">
-    <testcase classname="useValidation hook returns correct initial value" name="useValidation hook returns correct initial value" time="0.009">
+<testsuites name="jest tests" tests="11" failures="0" errors="0" time="0.965">
+  <testsuite name="useValidation" errors="0" failures="0" skipped="0" timestamp="2023-10-07T16:41:41" time="0.618" tests="11">
+    <testcase classname="useValidation hook returns correct initial value" name="useValidation hook returns correct initial value" time="0.01">
     </testcase>
-    <testcase classname="useValidation should validate form data when validator is registered" name="useValidation should validate form data when validator is registered" time="0.002">
+    <testcase classname="useValidation should validate form data when validator is registered" name="useValidation should validate form data when validator is registered" time="0.004">
     </testcase>
-    <testcase classname="useValidation can set all fields to be not touched" name="useValidation can set all fields to be not touched" time="0.002">
+    <testcase classname="useValidation can set all fields to be not touched" name="useValidation can set all fields to be not touched" time="0.003">
     </testcase>
-    <testcase classname="useValidation when touched field are set, it should only validate touched fields" name="useValidation when touched field are set, it should only validate touched fields" time="0.002">
+    <testcase classname="useValidation when touched field are set, it should only validate touched fields" name="useValidation when touched field are set, it should only validate touched fields" time="0.001">
     </testcase>
     <testcase classname="useValidation Can set validation error coming from server" name="useValidation Can set validation error coming from server" time="0.001">
     </testcase>
-    <testcase classname="useValidation isValid is false initially and then become true when all fields are valid" name="useValidation isValid is false initially and then become true when all fields are valid" time="0.003">
+    <testcase classname="useValidation isValid is false initially and then become true when all fields are valid" name="useValidation isValid is false initially and then become true when all fields are valid" time="0.002">
+    </testcase>
+    <testcase classname="useValidation can unregister validators by calling function returned by registerValidators" name="useValidation can unregister validators by calling function returned by registerValidators" time="0.003">
     </testcase>
     <testcase classname="useValidation with yup schema should validate empty form data when validator is registered" name="useValidation with yup schema should validate empty form data when validator is registered" time="0.003">
     </testcase>
-    <testcase classname="useValidation with yup schema should validate invalid form data when validator is registered" name="useValidation with yup schema should validate invalid form data when validator is registered" time="0.005">
+    <testcase classname="useValidation with yup schema should validate invalid form data when validator is registered" name="useValidation with yup schema should validate invalid form data when validator is registered" time="0.002">
+    </testcase>
+    <testcase classname="useValidation with basePath Can register validators with relative form path" name="useValidation with basePath Can register validators with relative form path" time="0">
+    </testcase>
+    <testcase classname="useValidation with basePath Should get all errors with relative fields" name="useValidation with basePath Should get all errors with relative fields" time="0.002">
     </testcase>
   </testsuite>
 </testsuites>

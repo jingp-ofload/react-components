@@ -1,4 +1,4 @@
-import useValidation, { UseValidationOptions, ValidatorContextValue } from './useValidation';
+import useValidation, { UseValidationOptions } from './useValidation';
 import React from 'react';
 import { act, waitFor } from '@testing-library/react';
 import { renderHook } from '@testing-library/react';
@@ -6,7 +6,7 @@ import { renderHook } from '@testing-library/react';
 import * as yup from 'yup';
 
 describe('useValidation', () => {
-    let result: React.RefObject<ValidatorContextValue>;
+    let result: any;
     let unmount: () => void;
     let rerender: (rerenderCallbackProps: any) => void;
 
@@ -47,9 +47,9 @@ describe('useValidation', () => {
 
     it('should validate form data when validator is registered', () => {
         expect(result.current?.errors).toEqual({
+            "user.age": "Age should be greater than 0",
             'user.firstName': 'First name is required',
             'user.lastName': 'Last name is required',
-            'user.age': 'Age should be greater than 0',
             'amount': 'Amount should be greater than 0',
         });
     });
@@ -101,10 +101,37 @@ describe('useValidation', () => {
 
         waitFor(() => expect(result.current?.isValid).toBeTruthy());
     });
+
+    test('can unregister validators by calling function returned by registerValidators', () => {
+        const { result: localResult } = renderHook(() => useValidation({amount: 99}));
+
+        let unregisterValidators: () => void;
+        act(() => {
+            unregisterValidators = localResult.current.registerValidators({
+                'user.firstName': (fieldName: string, value: string) => (!!value ? '' : 'First name is required'),
+                'user.lastName': (fieldName: string, value: string) => (!!value ? '' : 'Last name is required'),
+            })
+            localResult.current.setTouched("ALL_FIELDS", true);
+        });
+
+        expect(localResult.current.errors).toEqual({
+               "user.firstName": "First name is required",
+               "user.lastName": "Last name is required",
+        });
+
+        act(() => {
+            unregisterValidators();
+        })
+
+        expect(localResult.current.errors).toEqual({
+            "user.firstName": "",
+            "user.lastName": "",
+        });
+    })
 });
 
 describe('useValidation with yup schema', () => {
-    let result: React.RefObject<ValidatorContextValue>;
+    let result: any;
     let unmount: () => void;
     let rerender: (rerenderCallbackProps: any) => void;
 
@@ -168,12 +195,12 @@ describe('useValidation with yup schema', () => {
 });
 
 describe('useValidation with basePath', () => {
-    let result: React.RefObject<ValidatorContextValue>;
+    let result: any;
     let unmount: () => void;
     let rerender: (rerenderCallbackProps: any) => void;
 
     beforeEach(() => {
-        ({ result, rerender, unmount } = renderHook(({formData, options}: {formData: any, options: UseValidationOptions}) => useValidation(formData), {
+        ({ result, rerender, unmount } = renderHook(({formData, options}: {formData: any, options: UseValidationOptions}) => useValidation(formData, options), {
             initialProps: {
                 formData: {
                     user: {
@@ -198,5 +225,23 @@ describe('useValidation with basePath', () => {
         });
     });
 
+    test("Can register validators with relative form path", () => {
+        expect(result.current).toMatchObject({
+            errors: {},
+            isValid: false,
+        });
+    });
+
+    test("Should get all errors with relative fields", () => {
+        act(() => {
+            result.current.setTouched("ALL_FIELDS", true);
+        })
+
+        expect(result.current.errors).toEqual({
+            "age": "Age should be greater than 0",
+            "firstName": "First name is required",
+            "lastName": "Last name is required",
+        });
+    });
 
 })

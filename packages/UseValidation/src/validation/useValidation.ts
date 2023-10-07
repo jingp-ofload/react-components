@@ -1,48 +1,58 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { get as getValueOfPath } from 'object-path-immutable';
 import * as yup from 'yup';
+import { getSingletonInstance } from '../utils/SingletonStore';
+import Publisher, { usePublishedState } from '../utils/Publisher';
 
 export type Validator = ((flatFieldName: string, value: any, formData: Object) => string) | yup.AnySchema;
 type ValidatorsMap = Record<string, Validator>;
 type TouchedFields = Record<string, boolean>;
 
-const useValidation = (formData: Record<string, any>, options: Partial<UseValidationOptions> = defaultOptions): ValidatorContextValue => {
-    const { basePath = '' } = options;
-    const initialErrors: Record<string, string> = {};
+const getInitialValues = () => ({
+    localErrors: {} as Record<string, string>,
+    serverErrors: {} as Record<string, string>,
+    touchedFields: undefined as TouchedFields | undefined,
+    registeredValidators: {} as ValidatorsMap,
+    publisher: new Publisher(),
+});
 
-    const [localErrors, setLocalErrors] = useState(initialErrors);
-    const [serverErrors, _setServerErrors] = useState(initialErrors);
+const useValidation = (formData: Record<string, any>, options: Partial<UseValidationOptions> = defaultOptions, reuseId?: object): ValidatorContextValue => {
+    const localId = useRef({});
+    let savedValues = getSingletonInstance(reuseId || localId.current, getInitialValues);
 
-    const [touchedFields, setTouchFields] = useState<TouchedFields | undefined>();
+    const [localErrors, setLocalErrors] = usePublishedState('localErrors', savedValues);
+    const [serverErrors, _setServerErrors] = usePublishedState('serverErrors', savedValues);
+    const [touchedFields, setTouchedFields] = usePublishedState('touchedFields', savedValues);
+    const registeredValidatorsRef = savedValues.registeredValidators;
 
-    const registeredValidatorsRef = useRef<ValidatorsMap>({});
 
     useEffect(() => {
         validateAll();
     }, [formData]);
 
     const validateAll = () => {
-        const allKeys = Object.keys(registeredValidatorsRef.current);
+        const allKeys = Object.keys(registeredValidatorsRef);
         validateMany(allKeys);
     };
 
     const validateMany = (validationKeys: Array<string>) => {
-        setLocalErrors((oldErrors) => {
-            const newErrors = validationKeys.reduce((accumulator: Record<string, string>, validationKey) => {
-                accumulator[validationKey] = validate(validationKey);
-                return accumulator;
-            }, {});
+            setLocalErrors((oldErrors: Record<string, string>) => {
+                const newErrors = validationKeys.reduce((accumulator: Record<string, string>, validationKey) => {
+                    accumulator[validationKey] = validate(validationKey, undefined);
+                    return accumulator;
+                }, {});
 
-            if (JSON.stringify(newErrors) !== JSON.stringify(oldErrors)) {
-                return newErrors;
+                if (JSON.stringify(newErrors) !== JSON.stringify(oldErrors)) {
+                    return newErrors;
+                }
+
+                return oldErrors;
             }
-
-            return oldErrors;
-        });
+        );
     };
 
     const isValid = useMemo(() => {
-        return Object.keys(registeredValidatorsRef.current).every((key) => !localErrors?.[key]);
+        return Object.keys(registeredValidatorsRef).every((key) => !localErrors?.[key]);
     }, [localErrors]);
 
     const errors = useMemo(() => {
@@ -66,21 +76,22 @@ const useValidation = (formData: Record<string, any>, options: Partial<UseValida
     }, [localErrors, serverErrors, touchedFields]);
 
     function registerValidators(validators: ValidatorsMap) {
-        Object.assign(registeredValidatorsRef.current, validators);
+        Object.assign(registeredValidatorsRef, validators);
+
         validateAll();
 
         return () => {
             const keysToRemove = Object.keys(validators);
 
             keysToRemove.forEach((key) => {
-                delete registeredValidatorsRef.current[key];
+                delete registeredValidatorsRef[key];
             });
             validateAll();
         };
     }
 
     function validate(flatFieldName: string, value?: any): string {
-        const validator = registeredValidatorsRef.current[flatFieldName];
+        const validator = registeredValidatorsRef[flatFieldName];
         if (!validator) {
             return '';
         }
@@ -99,7 +110,7 @@ const useValidation = (formData: Record<string, any>, options: Partial<UseValida
     }
 
     function getFormValue(flatFieldName: string) {
-        return getValueOfPath(formData, `${basePath}.${flatFieldName}`);
+        return getValueOfPath(formData, flatFieldName);
     }
 
     /**
@@ -109,7 +120,7 @@ const useValidation = (formData: Record<string, any>, options: Partial<UseValida
     const setTouched = (fields: Array<string> | 'ALL_FIELDS', isTouched: boolean) => {
         let fieldsToTouch: Array<string> = [];
         if (fields === 'ALL_FIELDS') {
-            fieldsToTouch = Object.keys(registeredValidatorsRef.current);
+            fieldsToTouch = Object.keys(registeredValidatorsRef);
             if (fieldsToTouch.length === 0) {
                 console.warn('useValidation: not validation registered to touch');
             }
@@ -117,7 +128,7 @@ const useValidation = (formData: Record<string, any>, options: Partial<UseValida
             fieldsToTouch = fields;
         }
 
-        setTouchFields((oldTouchFields) => {
+        setTouchedFields((oldTouchFields) => {
             const newTouchedFields = { ...oldTouchFields };
             fieldsToTouch.forEach((field) => {
                 newTouchedFields[field] = isTouched;
@@ -134,7 +145,7 @@ const useValidation = (formData: Record<string, any>, options: Partial<UseValida
         setTouched(Object.keys(newErrors), false);
     };
 
-    return {
+    return withBasePath({
         errors,
         setServerErrors,
         setTouched,
@@ -142,8 +153,49 @@ const useValidation = (formData: Record<string, any>, options: Partial<UseValida
         registerValidators,
         validate,
         isValid,
-    };
+    }, options.basePath);
 };
+
+const stripPrefix = (prefix: string, fullString: string) => {
+    if (fullString.startsWith(prefix)) {
+        return fullString.replace(prefix, '');
+    }
+
+    return fullString;
+}
+
+const addPrefix = (prefix: string, stringPart: string) => {
+    return `${prefix}${stringPart}`;
+}
+
+const withBasePath = (result: ReturnType<typeof useValidation>, basePath?: string): ReturnType<typeof useValidation> => {
+    if(!basePath) {
+        return result;
+    }
+    const baseWithDot = `${basePath}.`
+    const errs = Object.fromEntries(Object.entries(result.errors).map(([key, value]) => {
+        return [stripPrefix(baseWithDot, key), value]
+    }));
+    return {
+        errors: errs,
+        setServerErrors: result.setServerErrors,
+        setTouched: (fields, isTouched) => {
+            if (fields === "ALL_FIELDS") {
+                return result.setTouched(fields, isTouched);
+            }
+
+            return result.setTouched(fields.map((field) => addPrefix(baseWithDot, field)), isTouched);
+        },
+        getFormValue: (flatPath) => result.getFormValue(addPrefix(baseWithDot, flatPath)),
+        registerValidators: (validators) => {
+            const newValidators = Object.fromEntries(Object.entries(validators).map(([key, value]) => [addPrefix(baseWithDot, key), value]));
+
+            return result.registerValidators(newValidators);
+        },
+        validate: (flatFieldName, value?) => result.validate(addPrefix(baseWithDot, flatFieldName), value),
+        isValid: result.isValid,
+    }
+}
 
 export interface ValidatorContextValue {
     errors: Record<string, string>;

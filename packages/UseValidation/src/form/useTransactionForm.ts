@@ -1,5 +1,4 @@
-import { object } from "yup";
-import CreateFormDataHook from "./useFormData";
+import {CreateFormDataHook, CreateFormValidationHook} from "./useFormData";
 
 export const InitialData = {
     date: null as Date | null,
@@ -12,6 +11,5 @@ export const InitialData = {
     }
 }
 
-const useTransactionForm = CreateFormDataHook(InitialData);
-
-export default useTransactionForm;
+export const useTransactionForm = CreateFormDataHook(InitialData);
+export const useTransactionValidation = CreateFormValidationHook(useTransactionForm);

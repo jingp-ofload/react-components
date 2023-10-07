@@ -13,7 +13,7 @@ export default {
     moduleFileExtensions: ['js', 'jsx', 'ts', 'tsx'],
     // setupFiles: ['<rootDir>/jest.setup.js'],
     testEnvironment: 'jsdom',
-    setupFilesAfterEnv: ['jest-expect-message'],
+    setupFilesAfterEnv: ['jest-expect-message', '<rootDir>/jest.setup.js'],
     transformIgnorePatterns: [
         'node_modules/(?!((ol)|(ol-mapbox-style))/)', // <- exclude the OL lib
     ],
