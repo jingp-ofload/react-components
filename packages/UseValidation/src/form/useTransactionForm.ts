@@ -1,4 +1,4 @@
-import {CreateFormDataHook, CreateFormValidationHook} from "./useFormData";
+import {CreateSharedFormDataHook, CreateSharedFormValidationHook} from "./useFormData";
 
 export const InitialData = {
     date: null as Date | null,
@@ -11,5 +11,5 @@ export const InitialData = {
     }
 }
 
-export const useTransactionForm = CreateFormDataHook(InitialData);
-export const useTransactionValidation = CreateFormValidationHook(useTransactionForm);
+export const useTransactionForm = CreateSharedFormDataHook(InitialData);
+export const useTransactionValidation = CreateSharedFormValidationHook(useTransactionForm);

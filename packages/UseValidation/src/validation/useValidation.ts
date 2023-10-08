@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { get as getValueOfPath } from 'object-path-immutable';
 import * as yup from 'yup';
-import { getSingletonInstance } from '../utils/SingletonStore';
+import { getMutableSingletonInstance } from '../utils/SingletonStore';
 import Publisher, { usePublishedState } from '../utils/Publisher';
 
 export type Validator = ((flatFieldName: string, value: any, formData: Object) => string) | yup.AnySchema;
@@ -18,11 +18,11 @@ const getInitialValues = () => ({
 
 const useValidation = (formData: Record<string, any>, options: Partial<UseValidationOptions> = defaultOptions, reuseId?: object): ValidatorContextValue => {
     const localId = useRef({});
-    let savedValues = getSingletonInstance(reuseId || localId.current, getInitialValues);
+    let savedValues = getMutableSingletonInstance(reuseId || localId.current, getInitialValues);
 
-    const [localErrors, setLocalErrors] = usePublishedState('localErrors', savedValues);
-    const [serverErrors, _setServerErrors] = usePublishedState('serverErrors', savedValues);
-    const [touchedFields, setTouchedFields] = usePublishedState('touchedFields', savedValues);
+    const [localErrors, setLocalErrors] = usePublishedState<typeof savedValues.localErrors>('localErrors', savedValues);
+    const [serverErrors, _setServerErrors] = usePublishedState<typeof savedValues.serverErrors>('serverErrors', savedValues);
+    const [touchedFields, setTouchedFields] = usePublishedState<typeof savedValues.touchedFields>('touchedFields', savedValues);
     const registeredValidatorsRef = savedValues.registeredValidators;
 
 

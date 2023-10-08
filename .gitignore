@@ -5,6 +5,7 @@ dist
 tmp
 types
 /out-tsc
+junit.xml
 
 # dependencies
 node_modules

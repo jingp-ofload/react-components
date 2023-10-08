@@ -19,7 +19,14 @@ const TransactionForm = () => {
     return (
         <form className={css.form}>
             <label htmlFor="date">Transaction Date</label>
-            <input type="date" name="date" id="date" onChange={setFormValue} value={(formData?.date || '')} />
+
+            <input
+                type="date"
+                name="date" id="date"
+                onChange={setFormValue}
+                /* @ts-ignore  */
+                value={(formData?.date || '')}
+            />
 
             <label htmlFor="amount">Amount</label>
             <input name="amount" id="amount" onChange={setFormValue} value={(formData?.amount || '')} />

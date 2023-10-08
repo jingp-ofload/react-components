@@ -2,15 +2,21 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as immutable from 'object-path-immutable';
 import useValidation from "../validation/useValidation";
 import Publisher, { usePublishedState } from "../utils/Publisher";
-import { getSingletonInstance } from "../utils/SingletonStore";
+import { getMutableSingletonInstance } from "../utils/SingletonStore";
+import { deepFreeze } from "../utils/deepFreeze";
 
 function getFieldValue(formData: any, baseDottedPath: string) {
     return immutable.get(formData, baseDottedPath)
 }
 
-const useFormData = <TFormData>(initialData: TFormData, baseDottedPath?: string, reuseId?: object) => {
+const getInitialValues = <T extends object>(initialData: T) => ({
+    formData: deepFreeze({...initialData}),
+    publisher: new Publisher(),
+})
+
+export const useFormData = <TFormData extends object>(initialData: TFormData, baseDottedPath?: string, reuseId?: object) => {
     const localId = useRef({});
-    const savedValues = getSingletonInstance(reuseId || localId.current, () => ({formData: initialData, publisher: new Publisher()}));
+    const savedValues = getMutableSingletonInstance(reuseId || localId.current, () => getInitialValues(initialData));
     const [fullFormData, setFormData] = usePublishedState('formData', savedValues)
 
     const currentFormData = useMemo(() => {
@@ -28,23 +34,23 @@ const useFormData = <TFormData>(initialData: TFormData, baseDottedPath?: string,
     }
 
     const resetForm = () => {
-        setFormData(initialData)
+        setFormData({...initialData})
     }
 
     return {
         formData: (baseDottedPath ? currentFormData : fullFormData) as TFormData,
         setFieldValue,
-        resetForm,
+        resetForm: (baseDottedPath ? () => { throw Error("Can't reset form when using partial form data")} : resetForm),
     };
 }
 
-export const CreateFormDataHook = (initialData: any) => {
+export const CreateSharedFormDataHook = (initialData: any) => {
     const reuseId = {};
 
-    return (<TFormData>(baseDottedPath?: string) => useFormData<TFormData>(initialData, baseDottedPath, reuseId));
+    return (<TFormData extends object>(baseDottedPath?: string) => useFormData<TFormData>(initialData, baseDottedPath, reuseId));
 }
 
-export const CreateFormValidationHook = <TFormData>(useFormDataHook: ReturnType<typeof CreateFormDataHook>) => {
+export const CreateSharedFormValidationHook = <TFormData extends object>(useFormDataHook: ReturnType<typeof CreateSharedFormDataHook>) => {
     const reuseId = {};
 
     return (dottedBasePath?: string) => {

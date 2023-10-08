@@ -45,9 +45,11 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const SingleForm: Story = {
+    // @ts-ignore
     render: () => <UserForm />
 }
 
 export const MultiStepFormExample: Story = {
+    // @ts-ignore
     render: () => <MultiStepForm />
 }
