@@ -47,24 +47,44 @@ describe('useValidation', () => {
 
     it('should validate form data when validator is registered', () => {
         expect(result.current?.errors).toEqual({
-            "user.age": "Age should be greater than 0",
+            'user.age': 'Age should be greater than 0',
             'user.firstName': 'First name is required',
             'user.lastName': 'Last name is required',
             'amount': 'Amount should be greater than 0',
         });
     });
 
+    test('Can set fields as not touched when registering validators', async () => {
+        await act(async () => {
+            result.current?.registerValidators({
+                'user.firstName': (fieldName: string, value: string) => (!!value ? '' : 'First name is required'),
+                'user.lastName': (fieldName: string, value: string) => (!!value ? '' : 'Last name is required'),
+            }, false);
+        })
+
+        expect(result.current?.errors).toEqual({});
+    })
+
+    test('Can set fields as touched when registering validators', async () => {
+        await act(async () => {
+            result.current?.registerValidators({
+                'user.firstName': (fieldName: string, value: string) => (!!value ? '' : 'First name is required'),
+                'user.lastName': (fieldName: string, value: string) => (!!value ? '' : 'Last name is required'),
+            }, true);
+        })
+
+        expect(result.current?.errors).toEqual({
+            "user.firstName": "First name is required",
+            "user.lastName": "Last name is required",
+     });
+    })
+
     test('can set all fields to be not touched', () => {
         act(() => {
             result.current?.setTouched('ALL_FIELDS', false);
         });
 
-        expect(result.current?.errors).toEqual({
-            'user.firstName': '',
-            'user.lastName': '',
-            'user.age': '',
-            'amount': '',
-        });
+        expect(result.current?.errors).toEqual({});
     });
 
     test('when touched field are set, it should only validate touched fields', () => {
@@ -123,10 +143,7 @@ describe('useValidation', () => {
             unregisterValidators();
         })
 
-        expect(localResult.current.errors).toEqual({
-            "user.firstName": "",
-            "user.lastName": "",
-        });
+        expect(localResult.current.errors).toEqual({});
     })
 });
 
@@ -243,5 +260,48 @@ describe('useValidation with basePath', () => {
             "lastName": "Last name is required",
         });
     });
+})
 
+describe('Reuse useValidation', () => {
+    test('setTouched with relative path only set fields starting with basePath', async () => {
+        const uniqueRef = {};
+        const formData = {
+            user: {
+                firstName: '',
+                lastName: '',
+                age: 0,
+            },
+            amount: 0,
+        }
+        const { result: resultFullForm } = renderHook(() => useValidation(formData, undefined, uniqueRef));
+        act(() => resultFullForm.current?.registerValidators({
+            'user.firstName': (fieldName: string, value: string) => (!!value ? '' : 'First name is required'),
+            'user.lastName': (fieldName: string, value: string) => (!!value ? '' : 'Last name is required'),
+            'user.age': (fieldName: string, age: number) => (age > 0 ? '' : 'Age should be greater than 0'),
+            'amount': (fieldName: string, amount: number) => (amount > 0 ? '' : 'Amount should be greater than 0'),
+        }));
+        const { result: resultUserOnly } = renderHook(() => useValidation(formData, {basePath: 'user'}, uniqueRef));
+
+        await act(async () => {
+            resultFullForm.current?.setTouched('ALL_FIELDS', false);
+        });
+
+        await act(async () => {
+            resultUserOnly.current?.setTouched('ALL_FIELDS', true);
+        });
+
+        expect(resultUserOnly.current?.errors).toEqual({
+            "age": "Age should be greater than 0",
+            "firstName": "First name is required",
+            "lastName": "Last name is required",
+        });
+
+        expect(resultFullForm.current?.errors).toEqual({
+            'user.age': 'Age should be greater than 0',
+            'user.firstName': 'First name is required',
+            'user.lastName': 'Last name is required',
+            'amount': 'Amount should be greater than 0',
+        });
+
+    })
 })

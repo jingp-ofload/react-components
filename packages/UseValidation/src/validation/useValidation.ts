@@ -63,20 +63,26 @@ const useValidation = (formData: Record<string, any>, options: Partial<UseValida
             };
         }
 
-        const visibleLocalErrors = Object.entries(touchedFields).reduce(
-            (accumulator: Record<string, string>, [field, isTouched]) => {
-                accumulator[field] = (isTouched ? localErrors[field] : serverErrors?.[field]) || '';
-
+        const visibleErrors = Object.entries(localErrors).reduce(
+            (accumulator: Record<string, string>, [field, error]) => {
+                const newError = (!!touchedFields[field] ? error : serverErrors?.[field]);
+                if (newError) {
+                    accumulator[field] = newError;
+                }
                 return accumulator;
             },
             {}
         );
 
-        return visibleLocalErrors;
+        return visibleErrors;
     }, [localErrors, serverErrors, touchedFields]);
 
-    function registerValidators(validators: ValidatorsMap) {
+    function registerValidators(validators: ValidatorsMap, setFieldsTouched: boolean | undefined = undefined) {
         Object.assign(registeredValidatorsRef, validators);
+
+        if (setFieldsTouched !== undefined) {
+            setTouched(Object.keys(validators), setFieldsTouched)
+        }
 
         validateAll();
 
@@ -173,9 +179,12 @@ const withBasePath = (result: ReturnType<typeof useValidation>, basePath?: strin
         return result;
     }
     const baseWithDot = `${basePath}.`
-    const errs = Object.fromEntries(Object.entries(result.errors).map(([key, value]) => {
-        return [stripPrefix(baseWithDot, key), value]
-    }));
+    const errs = Object.fromEntries(Object.entries(result.errors)
+        .filter(([key,]) => key.startsWith(baseWithDot))
+        .map(([key, value]) => {
+            return [stripPrefix(baseWithDot, key), value]
+        })
+    );
     return {
         errors: errs,
         setServerErrors: result.setServerErrors,
