@@ -1,5 +1,17 @@
 # @devnepal/use-validation
 
+## 1.3.0
+
+### Minor Changes
+
+- setFieldValue accepts callback function
+  registerValidators can set touched state of registered fields
+  Fix: setTouched with 'ALL_Field' is limited to fields starting with base path
+
+### Patch Changes
+
+- Cleaned up dependencies
+
 ## 1.2.1
 
 ### Patch Changes
