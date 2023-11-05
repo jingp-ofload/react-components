@@ -211,7 +211,7 @@ export interface ValidatorContextValue {
     setServerErrors: (errors: Record<string, string>) => void;
     setTouched: (fields: Array<string> | 'ALL_FIELDS', isTouched: boolean) => void;
     getFormValue: (flatPath: string) => any;
-    registerValidators: (validators: ValidatorsMap) => () => void;
+    registerValidators: (validators: ValidatorsMap, setFieldsTouched?: boolean) => () => void;
     validate: (flatPath: string, valueToValidate?: any) => string;
     isValid: boolean;
 }
