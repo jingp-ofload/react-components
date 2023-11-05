@@ -18,7 +18,7 @@ describe('useFormData in single component', () => {
     let rerender: RenderResult["rerender"];
     let unmount: RenderResult["unmount"];
     beforeEach(() => {
-        ({ result, rerender, unmount } = renderHook(() => useFormData(TransactionDefault)));
+        ({ result, rerender, unmount } = renderHook(() => useFormData<typeof TransactionDefault>(TransactionDefault)));
     });
 
     test('Can use form data independently without giving reuseId', async () => {
@@ -112,6 +112,48 @@ describe('useFormData in single component', () => {
         })
 
         expect(() => localResult.current.resetForm()).toThrow();
+    })
+
+    test('Can use callback function to set field value', () => {
+        act(() => {
+            result.current.setFieldValue('amount', (value: number) => value + 5);
+            result.current.setFieldValue('amount', (value: number) => value + 12);
+        })
+
+        expect(result.current.formData.amount).toBe(17);
+    })
+
+    test('Can use callback function to set field value with base path', async () => {
+        const { result: localResult } = renderHook(() => useFormData<typeof TransactionDefault.toUser>(TransactionDefault, 'toUser'));
+
+        await act(() => {
+            return new Promise((resolve) => {
+                localResult.current.setFieldValue('firstName', (value: string) => value + 'Dev');
+                localResult.current.setFieldValue('firstName', (value: string) => value + 'Khadka');
+
+                resolve('');
+            })
+        })
+
+        expect(localResult.current.formData.firstName).toBe('DevKhadka');
+    })
+
+    test('Can set root object value with empty path with base path', () => {
+        const { result: localResult } = renderHook(() => useFormData<typeof TransactionDefault.toUser>(TransactionDefault, 'toUser'));
+
+        act(() => {
+            localResult.current.setFieldValue('', (root: any) => ({...root, firstName: 'Dev'}));
+        })
+
+        expect(localResult.current.formData).toEqual({"email": "", "firstName": "Dev", "lastName": ""});
+    })
+
+    test('Can set root object value with empty path without base path', () => {
+        act(() => {
+            result.current.setFieldValue('', (root: any) => ({...root, amount: 100}));
+        })
+
+        expect(result.current.formData).toEqual({"amount": 100, "date": "", "toUser": {"email": "", "firstName": "", "lastName": ""}});
     })
 
     test("Can't mutate form data", () => {

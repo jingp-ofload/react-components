@@ -14,7 +14,7 @@ const getInitialValues = <T extends object>(initialData: T) => ({
     publisher: new Publisher(),
 })
 
-export const useFormData = <TFormData extends object>(initialData: TFormData, baseDottedPath?: string, reuseId?: object) => {
+export const useFormData = <TFormData extends object>(initialData: any, baseDottedPath?: string, reuseId?: object) => {
     const localId = useRef({});
     const savedValues = getMutableSingletonInstance(reuseId || localId.current, () => getInitialValues(initialData));
     const [fullFormData, setFormData] = usePublishedState('formData', savedValues)
@@ -27,8 +27,14 @@ export const useFormData = <TFormData extends object>(initialData: TFormData, ba
         return getFieldValue(fullFormData, baseDottedPath);
     }, [baseDottedPath, fullFormData]);
 
-    const setFieldValue = (relativeDottedPath: string, value:any) => {
-        const dottedPath = baseDottedPath ? `${baseDottedPath}.${relativeDottedPath}` : relativeDottedPath;
+    const setFieldValue = (relativeDottedPath: string, valueOrCallback:any) => {
+        // const dottedPath = baseDottedPath ? `${baseDottedPath}.${relativeDottedPath}` : relativeDottedPath;
+        const dottedPath = [baseDottedPath, relativeDottedPath].filter((pathPart) => !!pathPart).join('.');
+        let value = valueOrCallback;
+        if (typeof valueOrCallback === 'function') {
+            value = valueOrCallback(immutable.get(savedValues.formData, dottedPath));
+        }
+
         const newFormData = immutable.set(savedValues.formData, dottedPath, value);
         setFormData(newFormData);
     }
@@ -42,7 +48,7 @@ export const useFormData = <TFormData extends object>(initialData: TFormData, ba
         setFieldValue,
         resetForm: (baseDottedPath ? () => { throw Error("Can't reset form when using partial form data")} : resetForm),
     };
-}
+};
 
 export const CreateSharedFormDataHook = (initialData: any) => {
     const reuseId = {};
