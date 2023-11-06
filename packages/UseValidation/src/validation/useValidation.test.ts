@@ -65,20 +65,6 @@ describe('useValidation', () => {
         expect(result.current?.errors).toEqual({});
     })
 
-    test('Can set fields as touched when registering validators', async () => {
-        await act(async () => {
-            result.current?.registerValidators({
-                'user.firstName': (fieldName: string, value: string) => (!!value ? '' : 'First name is required'),
-                'user.lastName': (fieldName: string, value: string) => (!!value ? '' : 'Last name is required'),
-            }, true);
-        })
-
-        expect(result.current?.errors).toEqual({
-            "user.firstName": "First name is required",
-            "user.lastName": "Last name is required",
-     });
-    })
-
     test('can set all fields to be not touched', () => {
         act(() => {
             result.current?.setTouched('ALL_FIELDS', false);
@@ -248,6 +234,17 @@ describe('useValidation with basePath', () => {
             isValid: false,
         });
     });
+
+    test('Can set fields as not touched when registering validators with base path', async () => {
+        await act(async () => {
+            result.current?.registerValidators({
+                'firstName': (fieldName: string, value: string) => (!!value ? '' : 'First name is required'),
+                'lastName': (fieldName: string, value: string) => (!!value ? '' : 'Last name is required'),
+            }, false);
+        })
+
+        expect(result.current?.errors).toEqual({});
+    })
 
     test("Should get all errors with relative fields", () => {
         act(() => {

@@ -196,10 +196,10 @@ const withBasePath = (result: ReturnType<typeof useValidation>, basePath?: strin
             return result.setTouched(fields.map((field) => addPrefix(baseWithDot, field)), isTouched);
         },
         getFormValue: (flatPath) => result.getFormValue(addPrefix(baseWithDot, flatPath)),
-        registerValidators: (validators) => {
+        registerValidators: (validators, setFieldsTouched) => {
             const newValidators = Object.fromEntries(Object.entries(validators).map(([key, value]) => [addPrefix(baseWithDot, key), value]));
 
-            return result.registerValidators(newValidators);
+            return result.registerValidators(newValidators, setFieldsTouched);
         },
         validate: (flatFieldName, value?) => result.validate(addPrefix(baseWithDot, flatFieldName), value),
         isValid: result.isValid,
