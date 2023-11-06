@@ -1,5 +1,11 @@
 # @devnepal/use-validation
 
+## 1.14.0
+
+### Minor Changes
+
+- bug fix
+
 ## 1.9.0
 
 ### Minor Changes

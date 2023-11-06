@@ -1,5 +1,11 @@
 # examples
 
+## 0.0.18
+
+### Patch Changes
+
+- update dependency
+
 ## 0.0.13
 
 ### Patch Changes

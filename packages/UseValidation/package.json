@@ -1,6 +1,6 @@
 {
   "name": "@devnepal/use-validation",
-  "version": "1.9.0",
+  "version": "1.14.0",
   "description": "Easy and flexible form validation hook. This hooks support validation for multi step form.",
   "type": "module",
   "main": "dist/cjs/index.cjs",
