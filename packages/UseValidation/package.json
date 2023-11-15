@@ -1,6 +1,6 @@
 {
-  "name": "@devnepal/use-validation",
-  "version": "1.14.0",
+  "name": "@devnepal/use-form",
+  "version": "1.0.0",
   "description": "Easy and flexible form validation hook. This hooks support validation for multi step form.",
   "type": "module",
   "main": "dist/cjs/index.cjs",
@@ -10,7 +10,7 @@
     "test": "jest",
     "build": "rm -rf dist && rollup -c && node modifyPackageJson.cjs",
     "changeset11111": "changeset",
-    "publish": "changeset version && pnpm build && changeset publish",
+    "publish": "pnpm build && changeset publish",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },

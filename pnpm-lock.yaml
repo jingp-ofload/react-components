@@ -14,7 +14,7 @@ importers:
 
   apps/examples:
     dependencies:
-      '@devnepal/use-validation':
+      '@devnepal/use-form':
         specifier: workspace:^
         version: link:../../packages/UseValidation/dist
       object-path-immutable:
