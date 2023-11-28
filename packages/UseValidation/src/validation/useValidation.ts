@@ -56,16 +56,17 @@ const useValidation = (formData: Record<string, any>, options: Partial<UseValida
     }, [localErrors]);
 
     const errors = useMemo(() => {
+        const allErrors = {
+            ...localErrors,
+            ...serverErrors,
+        };
         if (!touchedFields) {
-            return {
-                ...localErrors,
-                ...serverErrors,
-            };
+            return allErrors;
         }
 
-        const visibleErrors = Object.entries(localErrors).reduce(
+        const visibleErrors = Object.entries(allErrors).reduce(
             (accumulator: Record<string, string>, [field, error]) => {
-                const newError = (!!touchedFields[field] ? error : serverErrors?.[field]);
+                const newError = (!!touchedFields[field] ? localErrors?.[field] : serverErrors?.[field]);
                 if (newError) {
                     accumulator[field] = newError;
                 }
@@ -77,11 +78,12 @@ const useValidation = (formData: Record<string, any>, options: Partial<UseValida
         return visibleErrors;
     }, [localErrors, serverErrors, touchedFields]);
 
-    function registerValidators(validators: ValidatorsMap, setFieldsTouched: boolean | undefined = undefined) {
+    function registerValidators(validators: ValidatorsMap, initialTouchedState: boolean | undefined = undefined) {
         Object.assign(registeredValidatorsRef, validators);
 
-        if (setFieldsTouched !== undefined) {
-            setTouched(Object.keys(validators), setFieldsTouched)
+        if (initialTouchedState !== undefined) {
+            const fieldsNotInitialized = Object.keys(validators).filter((key) => touchedFields?.[key] === undefined);
+            setTouched(fieldsNotInitialized, initialTouchedState)
         }
 
         validateAll();

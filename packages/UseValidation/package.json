@@ -1,7 +1,7 @@
 {
   "name": "@devnepal/use-form",
-  "version": "1.0.0",
-  "description": "Easy and flexible form validation hook. This hooks support validation for multi step form.",
+  "version": "1.0.1",
+  "description": "Easy and flexible react library to manage form data and form validation. This library provides intuitive hooks which also support validation for multi step form or form broken into multiple smaller components.",
   "type": "module",
   "main": "dist/cjs/index.cjs",
   "module": "dist/esm/index.js",

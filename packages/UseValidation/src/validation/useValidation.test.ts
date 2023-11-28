@@ -54,7 +54,7 @@ describe('useValidation', () => {
         });
     });
 
-    test('Can set fields as not touched when registering validators', async () => {
+    test('Can initialize fields as not touched when registering validators', async () => {
         await act(async () => {
             result.current?.registerValidators({
                 'user.firstName': (fieldName: string, value: string) => (!!value ? '' : 'First name is required'),
@@ -85,11 +85,31 @@ describe('useValidation', () => {
 
     test('Can set validation error coming from server', () => {
         act(() => {
-            result.current?.setServerErrors({ 'user.age': 'age should ate least be 16' });
+            result.current?.setServerErrors({ 'user.age': 'age should at least be 16' });
         });
 
         expect(result.current?.errors).toEqual({
-            'user.age': 'age should ate least be 16',
+            'user.age': 'age should at least be 16',
+        });
+    });
+
+    test('server error is not shown after field is touched', () => {
+        act(() => {
+            result.current?.setServerErrors({ 'user.age': 'age should at least be 16' });
+            result.current?.setTouched(['user.age'], true);
+        });
+
+        expect(result.current?.errors).toEqual({'user.age': 'Age should be greater than 0'});
+    });
+
+    test('Can set server validation error for field not registered', () => {
+
+        act(() => {
+            result.current?.setServerErrors({ 'user.gender': 'gender is required in backend' });
+        });
+
+        expect(result.current?.errors).toEqual({
+            'user.gender': 'gender is required in backend',
         });
     });
 
@@ -235,16 +255,86 @@ describe('useValidation with basePath', () => {
         });
     });
 
-    test('Can set fields as not touched when registering validators with base path', async () => {
+    test('Can initialize fields as not touched when registering validators with base path', async () => {
+        const { result: localResult } = renderHook(({formData, options}: {formData: any, options: UseValidationOptions}) => useValidation(formData, options), {
+            initialProps: {
+                formData: {
+                    user: {
+                        firstName: '',
+                        lastName: '',
+                        age: 0,
+                    },
+                    amount: 0,
+                },
+                options: {
+                    basePath: 'user'
+                }
+            },
+        });
+
         await act(async () => {
-            result.current?.registerValidators({
+            localResult.current?.registerValidators({
                 'firstName': (fieldName: string, value: string) => (!!value ? '' : 'First name is required'),
                 'lastName': (fieldName: string, value: string) => (!!value ? '' : 'Last name is required'),
             }, false);
+
+            localResult.current?.registerValidators({
+                'age': (fieldName: string, age: number) => (age > 0 ? '' : 'Age should be greater than 0'),
+            }, true);
         })
 
-        expect(result.current?.errors).toEqual({});
-    })
+        expect(localResult.current?.errors).toEqual({age: "Age should be greater than 0"});
+    });
+
+    test('Re-registering validator does not reset touched state', async () => {
+        const { result: localResult } = renderHook(({formData, options}: {formData: any, options: UseValidationOptions}) => useValidation(formData, options), {
+            initialProps: {
+                formData: {
+                    user: {
+                        firstName: '',
+                        lastName: '',
+                        age: 0,
+                    },
+                    amount: 0,
+                },
+                options: {
+                    basePath: 'user'
+                }
+            },
+        });
+
+        await act(async () => {
+            localResult.current?.registerValidators({
+                'firstName': (fieldName: string, value: string) => (!!value ? '' : 'First name is required'),
+                'lastName': (fieldName: string, value: string) => (!!value ? '' : 'Last name is required'),
+            }, false);
+
+            localResult.current?.registerValidators({
+                'age': (fieldName: string, age: number) => (age > 0 ? '' : 'Age should be greater than 0'),
+            }, true);
+        });
+
+        await act(async () => {
+            localResult.current.setTouched("ALL_FIELDS", true);
+        })
+
+        await act(async () => {
+            localResult.current?.registerValidators({
+                'firstName': (fieldName: string, value: string) => (!!value ? '' : 'First name is required'),
+                'lastName': (fieldName: string, value: string) => (!!value ? '' : 'Last name is required'),
+            }, false);
+
+            localResult.current?.registerValidators({
+                'age': (fieldName: string, age: number) => (age > 0 ? '' : 'Age should be greater than 0'),
+            }, true);
+        });
+
+        expect(localResult.current?.errors).toEqual({
+            age: "Age should be greater than 0",
+            firstName: "First name is required",
+            lastName: "Last name is required",
+        });
+    });
 
     test("Should get all errors with relative fields", () => {
         act(() => {
