@@ -198,10 +198,10 @@ const withBasePath = (result: ReturnType<typeof useValidation>, basePath?: strin
             return result.setTouched(fields.map((field) => addPrefix(baseWithDot, field)), isTouched);
         },
         getFormValue: (flatPath) => result.getFormValue(addPrefix(baseWithDot, flatPath)),
-        registerValidators: (validators, setFieldsTouched) => {
+        registerValidators: (validators, initialTouchedState) => {
             const newValidators = Object.fromEntries(Object.entries(validators).map(([key, value]) => [addPrefix(baseWithDot, key), value]));
 
-            return result.registerValidators(newValidators, setFieldsTouched);
+            return result.registerValidators(newValidators, initialTouchedState);
         },
         validate: (flatFieldName, value?) => result.validate(addPrefix(baseWithDot, flatFieldName), value),
         isValid: result.isValid,
@@ -213,7 +213,7 @@ export interface ValidatorContextValue {
     setServerErrors: (errors: Record<string, string>) => void;
     setTouched: (fields: Array<string> | 'ALL_FIELDS', isTouched: boolean) => void;
     getFormValue: (flatPath: string) => any;
-    registerValidators: (validators: ValidatorsMap, setFieldsTouched?: boolean) => () => void;
+    registerValidators: (validators: ValidatorsMap, initialTouchedState?: boolean) => () => void;
     validate: (flatPath: string, valueToValidate?: any) => string;
     isValid: boolean;
 }

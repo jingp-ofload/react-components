@@ -27,21 +27,21 @@ class Publisher<TEvent extends string = string> {
     }
 }
 
-export const usePublishedState = <TValue>(event: string, savedValues: {publisher: Publisher, [key: string]: any}) => {
-    const [value, setValue] = useState<TValue>(savedValues[event]);
+export const usePublishedState = <TValue>(valueKey: string, savedMutableValues: {publisher: Publisher, [key: string]: any}) => {
+    const [value, setValue] = useState<TValue>(savedMutableValues[valueKey]);
 
     useEffect(() => {
-        setValue(savedValues[event]);
-        savedValues.publisher.subscribe(event as string, setValue);
+        setValue(savedMutableValues[valueKey]);
+        savedMutableValues.publisher.subscribe(valueKey as string, setValue);
 
-        return savedValues.publisher.unsubscribe(event, setValue);
+        return savedMutableValues.publisher.unsubscribe(valueKey, setValue);
     }, [])
 
     return [
         value,
         ((valueOrUpdater) => {
-            savedValues[event] = typeof valueOrUpdater === 'function' ? (valueOrUpdater as (prevState: TValue) => TValue)(savedValues[event]) : valueOrUpdater;
-            savedValues.publisher.publish(event as string, savedValues[event]);
+            savedMutableValues[valueKey] = typeof valueOrUpdater === 'function' ? (valueOrUpdater as (prevState: TValue) => TValue)(savedMutableValues[valueKey]) : valueOrUpdater;
+            savedMutableValues.publisher.publish(valueKey as string, savedMutableValues[valueKey]);
         }) as typeof setValue,
     ] as const;
 }
