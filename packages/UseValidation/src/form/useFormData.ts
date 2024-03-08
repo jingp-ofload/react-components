@@ -15,9 +15,16 @@ const getInitialValues = <T extends object>(initialData: T) => ({
 })
 
 export const useFormData = <TFormData extends object>(initialData: any, baseDottedPath?: string, reuseId?: object) => {
-    const localId = useRef({});
+    const localId = useRef<any>({});
     const savedValues = getMutableSingletonInstance(reuseId || localId.current, () => getInitialValues(initialData));
     const [fullFormData, setFormData] = usePublishedState('formData', savedValues)
+
+    useEffect(() => {
+        // clean up singleton value on unmount when using localId
+        return () => {
+            localId.current = null;
+        }
+    }, []);
 
     const currentFormData = useMemo(() => {
         if (!baseDottedPath) {
@@ -50,12 +57,20 @@ export const useFormData = <TFormData extends object>(initialData: any, baseDott
     };
 };
 
+/**
+ * @deprecated Use [CreateSharedFormDataHookWithCleanup] so that client can cleanup
+ * memory after it is no longer needed.
+ */
 export const CreateSharedFormDataHook = (initialData: any) => {
     const reuseId = {};
 
     return (<TFormData extends object>(baseDottedPath?: string) => useFormData<TFormData>(initialData, baseDottedPath, reuseId));
 }
 
+/**
+ * @deprecated Use [CreateSharedFormValidationHookWithCleanup] so that client can cleanup
+ * memory after it is no longer needed.
+ */
 export const CreateSharedFormValidationHook = <TFormData extends object>(useFormDataHook: ReturnType<typeof CreateSharedFormDataHook>) => {
     const reuseId = {};
 
@@ -64,4 +79,50 @@ export const CreateSharedFormValidationHook = <TFormData extends object>(useForm
 
         return useValidation(formData as Record<string, any>, { basePath: dottedBasePath }, reuseId)
     }
+}
+
+/**
+ * @returns a hook and cleanup function. cleanup function can be called when
+ * root component is unmounted to allow garbage collection of form data.
+ */
+export const CreateSharedFormDataHookWithCleanup = (initialData: any) => {
+    let reuseId: object | undefined = {};
+
+    const hook = (<TFormData extends object>(baseDottedPath?: string) => {
+        if(!reuseId) {
+            reuseId = {};
+        }
+
+        return useFormData<TFormData>(initialData, baseDottedPath, reuseId)
+    });
+
+    const cleanup = () => {
+        reuseId = undefined;
+    }
+
+    return {hook, cleanup}
+}
+
+
+/**
+ * @returns a hook and cleanup function. cleanup function can be called when
+ * root component is unmounted to allow garbage collection of validation data.
+ */
+export const CreateSharedFormValidationHookWithCleanup = <TFormData extends object>(useFormDataHook: ReturnType<typeof CreateSharedFormDataHookWithCleanup>['hook']) => {
+    let reuseId: object | undefined = {};
+
+    const hook = (dottedBasePath?: string) => {
+        const { formData } = useFormDataHook<TFormData>();
+        if(!reuseId) {
+            reuseId = {};
+        }
+
+        return useValidation(formData as Record<string, any>, { basePath: dottedBasePath }, reuseId)
+    }
+
+    const cleanup = () => {
+        reuseId = undefined;
+    }
+
+    return {hook, cleanup}
 }

@@ -17,7 +17,7 @@ const getInitialValues = () => ({
 });
 
 const useValidation = (formData: Record<string, any>, options: Partial<UseValidationOptions> = defaultOptions, reuseId?: object): ValidatorContextValue => {
-    const localId = useRef({});
+    const localId = useRef<any>({});
     let savedValues = getMutableSingletonInstance(reuseId || localId.current, getInitialValues);
 
     const [localErrors, setLocalErrors] = usePublishedState<typeof savedValues.localErrors>('localErrors', savedValues);
@@ -25,6 +25,12 @@ const useValidation = (formData: Record<string, any>, options: Partial<UseValida
     const [touchedFields, setTouchedFields] = usePublishedState<typeof savedValues.touchedFields>('touchedFields', savedValues);
     const registeredValidatorsRef = savedValues.registeredValidators;
 
+    useEffect(() => {
+        // clean up singleton value on unmount when using localId
+        return () => {
+            localId.current = null;
+        }
+    }, [])
 
     useEffect(() => {
         validateAll();

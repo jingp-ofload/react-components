@@ -9,7 +9,7 @@
   "scripts": {
     "test": "jest",
     "build": "rm -rf dist && rollup -c && node modifyPackageJson.cjs",
-    "changeset11111": "changeset",
+    "changeset": "changeset",
     "publish": "pnpm build && changeset publish",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"

@@ -1,12 +1,30 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import UserForm from './ExampleUserForm';
 import TransactionForm from './ExampleTransactionForm';
-import { useTransactionValidation } from './useTransactionForm';
+import { useTransactionValidation, cleanupTransactionForm, cleanupTransactionValidation } from './useTransactionForm';
+
+const SingleStepForm = ({}) => {
+    useEffect(() => {
+        return () => {
+            cleanupTransactionForm();
+            cleanupTransactionValidation();
+        }
+    }, []);
+
+    return <UserForm />;
+}
 
 const MultiStepForm = ({}) => {
     const [curStep, setCurStep] = useState(0);
     const { isValid } = useTransactionValidation();
+
+    useEffect(() => {
+        return () => {
+            cleanupTransactionForm();
+            cleanupTransactionValidation();
+        }
+    }, [])
 
     const changeStep = (step: number) => {
         setCurStep((oldStep) => {
@@ -46,7 +64,7 @@ type Story = StoryObj<typeof meta>;
 
 export const SingleForm: Story = {
     // @ts-ignore
-    render: () => <UserForm />
+    render: () => <SingleStepForm />
 }
 
 export const MultiStepFormExample: Story = {
