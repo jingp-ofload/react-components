@@ -1,6 +1,6 @@
 {
   "name": "@devnepal/use-form",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Easy and flexible react library to manage form data and form validation. This library provides intuitive hooks which also support validation for multi step form or form broken into multiple smaller components.",
   "type": "module",
   "main": "dist/cjs/index.cjs",
@@ -9,8 +9,9 @@
   "scripts": {
     "test": "jest",
     "build": "rm -rf dist && rollup -c && node modifyPackageJson.cjs",
-    "changeset": "changeset",
-    "publish": "pnpm build && changeset publish",
+    "changeset:create": "changeset",
+    "changeset:version": "changeset version",
+    "changeset:publish": "pnpm build && changeset publish",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },

@@ -46,8 +46,8 @@ export const useFormData = <TFormData extends object>(initialData: any, baseDott
         setFormData(newFormData);
     }
 
-    const resetForm = () => {
-        setFormData({...initialData})
+    const resetForm = (newFormData?: TFormData) => {
+        setFormData({...(newFormData || initialData)})
     }
 
     return {
