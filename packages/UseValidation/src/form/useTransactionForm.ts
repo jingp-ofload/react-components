@@ -1,4 +1,4 @@
-import { CreateSharedFormDataHookWithCleanup, CreateSharedFormValidationHookWithCleanup} from "./useFormData";
+import { CreateSharedFormDataHookWithCleanUp, CreateSharedFormValidationHookWithCleanUp} from "./useFormData";
 
 export const InitialData = {
     date: null as Date | null,
@@ -11,5 +11,5 @@ export const InitialData = {
     }
 }
 
-export const {hook: useTransactionForm, cleanup: cleanupTransactionForm} = CreateSharedFormDataHookWithCleanup(InitialData);
-export const {hook: useTransactionValidation, cleanup: cleanupTransactionValidation} = CreateSharedFormValidationHookWithCleanup(useTransactionForm);
+export const {hook: useTransactionForm, cleanUp: cleanUpTransactionForm} = CreateSharedFormDataHookWithCleanUp(InitialData);
+export const {hook: useTransactionValidation, cleanUp: cleanUpTransactionValidation} = CreateSharedFormValidationHookWithCleanUp(useTransactionForm);

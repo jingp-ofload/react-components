@@ -5,14 +5,10 @@ import * as yup from 'yup';
 
 const UserForm = () => {
     const {formData: user, setFieldValue} = useTransactionForm<typeof InitialData.user>('user');
-    const { registerValidators, errors } = useTransactionValidation('user');
+    const { registerValidators, errors } = useTransactionValidation<typeof UserValidators>('user');
 
     useEffect(() => {
-         return registerValidators({
-            firstName: yup.string().required().min(2),
-            lastName: yup.string().required().min(2),
-            email: yup.string().required().email(),
-        })
+         return registerValidators(UserValidators)
     }, [])
 
     const setFormValue: ChangeEventHandler<HTMLInputElement> = (e) => {
@@ -39,6 +35,12 @@ const UserForm = () => {
             </div>
         </form>
     );
+}
+
+const UserValidators = {
+    firstName: yup.string().required().min(2),
+    lastName: yup.string().required().min(2),
+    email: yup.string().required().email(),
 }
 
 export default UserForm;

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as immutable from 'object-path-immutable';
-import useValidation from "../validation/useValidation";
+import useValidation, { Validator, ValidatorsMap } from "../validation/useValidation";
 import Publisher, { usePublishedState } from "../utils/Publisher";
 import { getMutableSingletonInstance } from "../utils/SingletonStore";
 import { deepFreeze } from "../utils/deepFreeze";
@@ -58,7 +58,7 @@ export const useFormData = <TFormData extends object>(initialData: any, baseDott
 };
 
 /**
- * @deprecated Use [CreateSharedFormDataHookWithCleanup] so that client can cleanup
+ * @deprecated Use [CreateSharedFormDataHookWithCleanUp] so that client can clean-up
  * memory after it is no longer needed.
  */
 export const CreateSharedFormDataHook = (initialData: any) => {
@@ -68,24 +68,24 @@ export const CreateSharedFormDataHook = (initialData: any) => {
 }
 
 /**
- * @deprecated Use [CreateSharedFormValidationHookWithCleanup] so that client can cleanup
+ * @deprecated Use [CreateSharedFormValidationHookWithCleanUp] so that client can clean-up
  * memory after it is no longer needed.
  */
 export const CreateSharedFormValidationHook = <TFormData extends object>(useFormDataHook: ReturnType<typeof CreateSharedFormDataHook>) => {
     const reuseId = {};
 
-    return (dottedBasePath?: string) => {
+    return <TValidatorsMap extends ValidatorsMap>(dottedBasePath?: string) => {
         const { formData } = useFormDataHook<TFormData>();
 
-        return useValidation(formData as Record<string, any>, { basePath: dottedBasePath }, reuseId)
+        return useValidation<TValidatorsMap>(formData as Record<string, any>, { basePath: dottedBasePath }, reuseId)
     }
 }
 
 /**
- * @returns a hook and cleanup function. cleanup function can be called when
+ * @returns a hook and cleanUp function. cleanUp function can be called when
  * root component is unmounted to allow garbage collection of form data.
  */
-export const CreateSharedFormDataHookWithCleanup = (initialData: any) => {
+export const CreateSharedFormDataHookWithCleanUp = (initialData: any) => {
     let reuseId: object | undefined = {};
 
     const hook = (<TFormData extends object>(baseDottedPath?: string) => {
@@ -96,33 +96,33 @@ export const CreateSharedFormDataHookWithCleanup = (initialData: any) => {
         return useFormData<TFormData>(initialData, baseDottedPath, reuseId)
     });
 
-    const cleanup = () => {
+    const cleanUp = () => {
         reuseId = undefined;
     }
 
-    return {hook, cleanup}
+    return {hook, cleanUp}
 }
 
 
 /**
- * @returns a hook and cleanup function. cleanup function can be called when
+ * @returns a hook and cleanUp function. cleanUp function can be called when
  * root component is unmounted to allow garbage collection of validation data.
  */
-export const CreateSharedFormValidationHookWithCleanup = <TFormData extends object>(useFormDataHook: ReturnType<typeof CreateSharedFormDataHookWithCleanup>['hook']) => {
+export const CreateSharedFormValidationHookWithCleanUp = <TFormData extends object>(useFormDataHook: ReturnType<typeof CreateSharedFormDataHookWithCleanUp>['hook']) => {
     let reuseId: object | undefined = {};
 
-    const hook = (dottedBasePath?: string) => {
+    const hook = <TValidatorsMap extends ValidatorsMap>(dottedBasePath?: string) => {
         const { formData } = useFormDataHook<TFormData>();
         if(!reuseId) {
             reuseId = {};
         }
 
-        return useValidation(formData as Record<string, any>, { basePath: dottedBasePath }, reuseId)
+        return useValidation<TValidatorsMap>(formData as Record<string, any>, { basePath: dottedBasePath }, reuseId)
     }
 
-    const cleanup = () => {
+    const cleanUp = () => {
         reuseId = undefined;
     }
 
-    return {hook, cleanup}
+    return {hook, cleanUp}
 }

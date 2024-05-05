@@ -1,5 +1,11 @@
 # @devnepal/use-form
 
+## 1.2.0
+
+### Minor Changes
+
+- Added type to useValidation hook and improved documentation
+
 ## 1.1.1
 
 ### Patch Changes

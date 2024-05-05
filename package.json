@@ -12,5 +12,9 @@
   "license": "ISC",
   "devDependencies": {
     "@changesets/cli": "^2.26.2"
+  },
+  "repository": {
+    "url": "https://github.com/devbkhadka/react-components",
+    "type": "git"
   }
 }

@@ -5,7 +5,7 @@ import { getMutableSingletonInstance } from '../utils/SingletonStore';
 import Publisher, { usePublishedState } from '../utils/Publisher';
 
 export type Validator = ((flatFieldName: string, value: any, formData: Object) => string) | yup.AnySchema;
-type ValidatorsMap = Record<string, Validator>;
+export type ValidatorsMap = Record<string, Validator>;
 type TouchedFields = Record<string, boolean>;
 
 const getInitialValues = () => ({
@@ -16,14 +16,15 @@ const getInitialValues = () => ({
     publisher: new Publisher(),
 });
 
-const useValidation = (formData: Record<string, any>, options: Partial<UseValidationOptions> = defaultOptions, reuseId?: object): ValidatorContextValue => {
+const useValidation = <TValidatorsMap extends ValidatorsMap>(formData: Record<string, any>, options: Partial<UseValidationOptions> = defaultOptions, reuseId?: object): ValidatorContextValue<TValidatorsMap> => {
+    type TValidatorKeys = keyof TValidatorsMap & string;
     const localId = useRef<any>({});
-    let savedValues = getMutableSingletonInstance(reuseId || localId.current, getInitialValues);
+    let mutableSingletonValues = getMutableSingletonInstance(reuseId || localId.current, getInitialValues);
 
-    const [localErrors, setLocalErrors] = usePublishedState<typeof savedValues.localErrors>('localErrors', savedValues);
-    const [serverErrors, _setServerErrors] = usePublishedState<typeof savedValues.serverErrors>('serverErrors', savedValues);
-    const [touchedFields, setTouchedFields] = usePublishedState<typeof savedValues.touchedFields>('touchedFields', savedValues);
-    const registeredValidatorsRef = savedValues.registeredValidators;
+    const [localErrors, setLocalErrors] = usePublishedState<typeof mutableSingletonValues.localErrors>('localErrors', mutableSingletonValues);
+    const [serverErrors, _setServerErrors] = usePublishedState<typeof mutableSingletonValues.serverErrors>('serverErrors', mutableSingletonValues);
+    const [touchedFields, setTouchedFields] = usePublishedState<typeof mutableSingletonValues.touchedFields>('touchedFields', mutableSingletonValues);
+    const registeredValidatorsRef = mutableSingletonValues.registeredValidators;
 
     useEffect(() => {
         // clean up singleton value on unmount when using localId
@@ -123,16 +124,12 @@ const useValidation = (formData: Record<string, any>, options: Partial<UseValida
         return validator(flatFieldName, valueToValidate, formData);
     }
 
-    function getFormValue(flatFieldName: string) {
+    function getFormValue(flatFieldName: TValidatorKeys) {
         return getValueOfPath(formData, flatFieldName);
     }
 
-    /**
-     * @param { Array<string> | 'ALL_FIELDS' }  fields
-     * @param { boolean }  isTouched
-     */
-    const setTouched = (fields: Array<string> | 'ALL_FIELDS', isTouched: boolean) => {
-        let fieldsToTouch: Array<string> = [];
+    const setTouched = (fields: Array<keyof TValidatorsMap> | 'ALL_FIELDS', isTouched: boolean) => {
+        let fieldsToTouch: Array<keyof TValidatorsMap> = [];
         if (fields === 'ALL_FIELDS') {
             fieldsToTouch = Object.keys(registeredValidatorsRef);
             if (fieldsToTouch.length === 0) {
@@ -145,7 +142,7 @@ const useValidation = (formData: Record<string, any>, options: Partial<UseValida
         setTouchedFields((oldTouchFields) => {
             const newTouchedFields = { ...oldTouchFields };
             fieldsToTouch.forEach((field) => {
-                newTouchedFields[field] = isTouched;
+                newTouchedFields[field as string] = isTouched;
             });
 
             return newTouchedFields;
@@ -159,8 +156,8 @@ const useValidation = (formData: Record<string, any>, options: Partial<UseValida
         setTouched(Object.keys(newErrors), false);
     };
 
-    return withBasePath({
-        errors,
+    return withBasePath<TValidatorsMap>({
+        errors: errors as Record<keyof TValidatorsMap, string>,
         setServerErrors,
         setTouched,
         getFormValue,
@@ -182,7 +179,7 @@ const addPrefix = (prefix: string, stringPart: string) => {
     return `${prefix}${stringPart}`;
 }
 
-const withBasePath = (result: ReturnType<typeof useValidation>, basePath?: string): ReturnType<typeof useValidation> => {
+const withBasePath = <TValidatorsMap extends ValidatorsMap>(result: ReturnType<typeof useValidation<TValidatorsMap>>, basePath?: string): ReturnType<typeof useValidation<TValidatorsMap>> => {
     if(!basePath) {
         return result;
     }
@@ -194,7 +191,7 @@ const withBasePath = (result: ReturnType<typeof useValidation>, basePath?: strin
         })
     );
     return {
-        errors: errs,
+        errors: errs as Record<keyof TValidatorsMap, string>,
         setServerErrors: result.setServerErrors,
         setTouched: (fields, isTouched) => {
             if (fields === "ALL_FIELDS") {
@@ -207,20 +204,20 @@ const withBasePath = (result: ReturnType<typeof useValidation>, basePath?: strin
         registerValidators: (validators, initialTouchedState) => {
             const newValidators = Object.fromEntries(Object.entries(validators).map(([key, value]) => [addPrefix(baseWithDot, key), value]));
 
-            return result.registerValidators(newValidators, initialTouchedState);
+            return result.registerValidators(newValidators as TValidatorsMap, initialTouchedState);
         },
         validate: (flatFieldName, value?) => result.validate(addPrefix(baseWithDot, flatFieldName), value),
         isValid: result.isValid,
     }
 }
 
-export interface ValidatorContextValue {
-    errors: Record<string, string>;
+export interface ValidatorContextValue<TValidatorsMap extends ValidatorsMap> {
+    errors: Partial<Record<keyof TValidatorsMap & string, string>>;
     setServerErrors: (errors: Record<string, string>) => void;
-    setTouched: (fields: Array<string> | 'ALL_FIELDS', isTouched: boolean) => void;
-    getFormValue: (flatPath: string) => any;
-    registerValidators: (validators: ValidatorsMap, initialTouchedState?: boolean) => () => void;
-    validate: (flatPath: string, valueToValidate?: any) => string;
+    setTouched: (fields: Array<keyof TValidatorsMap & string> | 'ALL_FIELDS', isTouched: boolean) => void;
+    getFormValue: (flatPath: keyof TValidatorsMap & string) => any;
+    registerValidators: (validators: TValidatorsMap, initialTouchedState?: boolean) => () => void;
+    validate: (flatPath: keyof TValidatorsMap & string, valueToValidate?: any) => string;
     isValid: boolean;
 }
 

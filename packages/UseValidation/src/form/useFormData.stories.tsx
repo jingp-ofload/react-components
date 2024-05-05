@@ -2,13 +2,13 @@ import type { Meta, StoryObj } from '@storybook/react';
 import React, { useEffect, useState } from 'react';
 import UserForm from './ExampleUserForm';
 import TransactionForm from './ExampleTransactionForm';
-import { useTransactionValidation, cleanupTransactionForm, cleanupTransactionValidation } from './useTransactionForm';
+import { useTransactionValidation, cleanUpTransactionForm, cleanUpTransactionValidation } from './useTransactionForm';
 
 const SingleStepForm = ({}) => {
     useEffect(() => {
         return () => {
-            cleanupTransactionForm();
-            cleanupTransactionValidation();
+            cleanUpTransactionForm();
+            cleanUpTransactionValidation();
         }
     }, []);
 
@@ -21,8 +21,8 @@ const MultiStepForm = ({}) => {
 
     useEffect(() => {
         return () => {
-            cleanupTransactionForm();
-            cleanupTransactionValidation();
+            cleanUpTransactionForm();
+            cleanUpTransactionValidation();
         }
     }, [])
 

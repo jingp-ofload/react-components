@@ -5,12 +5,10 @@ import * as yup from 'yup';
 
 const TransactionForm = () => {
     const {formData, setFieldValue} = useTransactionForm<typeof InitialData>();
-    const { registerValidators, errors } = useTransactionValidation();
+    const { registerValidators, errors } = useTransactionValidation<typeof TransactionValidators>();
 
     useEffect(() => {
-        return registerValidators({
-            amount: yup.number().min(1)
-        })
+        return registerValidators(TransactionValidators)
     }, [])
     const setFormValue: ChangeEventHandler<HTMLInputElement> = (e) => {
         setFieldValue(e.target.name, e.target.value);
@@ -42,4 +40,7 @@ const TransactionForm = () => {
     );
 }
 
+const TransactionValidators = {
+    amount: yup.number().min(1)
+}
 export default TransactionForm;

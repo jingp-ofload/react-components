@@ -8,11 +8,17 @@ This package reduces the boilerplate codes need to manage state for form data, m
 
 
 ### Usage
-#### Shared form data
-- **Create a module for shared form data and validation**
+
+#### Share form and validation data across multiple components
+<details>
+<summary>Click to expand/collapse this section</summary>
+<br/>
+
+##### Create a module for shared form data and validation
 ```ts
 // useTransactionForm.ts
-import {CreateSharedFormDataHook, CreateSharedFormValidationHook} from "./index.ts";
+import { CreateSharedFormDataHookWithCleanUp, CreateSharedFormValidationHookWithCleanUp} from "@devnepal/use-form";
+
 
 export const InitialData = {
     date: null as Date | null,
@@ -25,10 +31,12 @@ export const InitialData = {
     }
 }
 
-export const useTransactionForm = CreateSharedFormDataHook(InitialData);
-export const useTransactionValidation = CreateSharedFormValidationHook(useTransactionForm);
+export const {hook: useTransactionForm, cleanUp: cleanUpTransactionForm} = CreateSharedFormDataHookWithCleanUp(InitialData);
+export const {hook: useTransactionValidation, cleanUp: cleanUpTransactionValidation} = CreateSharedFormValidationHookWithCleanUp(useTransactionForm);
 ```
-- **Now you can use these hooks in multiple components like below**
+
+##### Now you can use these hooks in multiple components like below
+**Form component One**
 ```ts
 // ExampleTransactionForm.tsx
 import React, { ChangeEventHandler, useEffect } from 'react';
@@ -40,6 +48,7 @@ const TransactionForm = () => {
     const {formData, setFieldValue} = useTransactionForm<typeof InitialData>();
     const { registerValidators, errors } = useTransactionValidation();
 
+    // register validators
     useEffect(() => {
         return registerValidators({
             amount: yup.number().min(1)
@@ -70,7 +79,10 @@ const TransactionForm = () => {
 
 export default TransactionForm;
 ```
+
 <br/>
+
+**Form component Two**
 
 ```ts
 // ExampleUserForm.tsx
@@ -121,23 +133,32 @@ export default UserForm;
 
 ```
 
->> **Note** on `registerValidators`
+>> **Note on `registerValidators`**
 >> - It should be called from useEffect to register validators related to current component
->> - It returns as function which can be called to unregister validators. Returning it from useEffect removes these validators when components are unmounted
->> - validator also accept a function that returns error message when validation failed and empty text else.
+>> - It returns a function which can be called to unregister validators. Returning the function from useEffect removes these validators when components are unmounted
+>> - validator passed to registerValidator can also be a function that returns error message when data is invalid and empty text otherwise.
 
-- **Simple multi step form**
+##### Simple multi step form
 
+**Root Component**
 ```ts
 // MultiStepForm.tsx
 import React, { useState } from 'react';
 import UserForm from './ExampleUserForm';
 import TransactionForm from './ExampleTransactionForm';
-import { useTransactionValidation } from './useTransactionForm';
+import { useTransactionValidation, cleanUpTransactionForm, cleanUpTransactionValidation } from './useTransactionForm';
 
 const MultiStepForm = ({}) => {
     const [curStep, setCurStep] = useState(0);
     const { isValid } = useTransactionValidation();
+
+    // clean-up when root component is unmounted
+     useEffect(() => {
+        return () => {
+            cleanUpTransactionForm();
+            cleanUpTransactionValidation();
+        }
+    }, []);
 
     const changeStep = (step: number) => {
         setCurStep((oldStep) => {
@@ -165,15 +186,39 @@ const MultiStepForm = ({}) => {
 
 export default MultiStepForm;
 ```
+</details>
 
-#### Using it in single form
-To use it in one form only you don't need to create a separate module. Instead you directly use hooks with initial data
+#### Scoping hooks specific child of form object
+<details>
+<summary>Click to expand/collapse this section</summary>
+<br/>
+
+
 ```ts
 import {useFormData, useValidation} from "./index.ts";
 ...
 // inside your component
 const {formData: user, setFieldValue} = useFormData<typeof InitialData.user>(initialData, 'user');
-const { registerValidators, errors } = useValidation(user);
+const { registerValidators, errors } = useValidation(user, 'user');
+...
+```
+
+When hook is scoped with base path (eg. `user` in above example) we can use relative path to access formData or errors eg. we can use `'firstName'` instead of `'user.firstName'`
+
+</details>
+
+#### Using it in single form
+<details>
+<summary>Click to expand/collapse this section</summary>
+<br/>
+
+To use it in only one form you don't need to create a separate module. Instead you can directly use hooks with initial data
+```ts
+import {useFormData, useValidation} from "./index.ts";
+...
+// inside your component
+const {formData: user, setFieldValue} = useFormData<typeof InitialData.user>(initialData, 'user');
+const { registerValidators, errors } = useValidation(user, 'user');
 
 useEffect(() => {
          return registerValidators({
@@ -185,9 +230,46 @@ useEffect(() => {
 
 ...
 ```
+</details>
+
+#### Getting type hints for form data and errors
+<details>
+<summary>Click to expand/collapse this section</summary>
+<br/>
+
+To get type hints on your IDE pass generic type parameters as shown in following example.
+```ts
+import {useFormData, useValidation} from "./index.ts";
+...
+// inside your component
+const {formData: user, setFieldValue} = useFormData<typeof InitialData.user>(initialData, 'user');
+const { registerValidators, errors } = useValidation<typeof validators>(user);
+const validators = {
+            firstName: yup.string().required().min(2),
+            lastName: yup.string().required().min(2),
+            email: yup.string().required().email(),
+        };
+useEffect(() => {
+         return registerValidators(validators)
+}, []);
+
+...
+```
+</details>
 
 #### Using function as validators
+<details>
+<summary>Click to expand/collapse this section</summary>
+<br/>
+
+You can use simple function as validator. The function will be called with `flatFieldName, valueToValidate, formData` and it should return error message if the data is invalid otherwise return empty string.
+
+>> **Note Scope hooks with basePath parameter**
+>> In previous examples hooks were scoped using basePath parameter eg. `const { registerValidators, errors } = useTransactionValidation('user');`. When basePath is not used we need to use dotted path like below `user.firstName`
+
+
 ```
+const { registerValidators, errors } = useTransactionValidation();
 useEffect(() => {
          return registerValidators({
                 'user.firstName': (fieldName: string, value: string) => (!!value ? '' : 'First name is required'),
@@ -196,5 +278,5 @@ useEffect(() => {
                 'amount': (fieldName: string, amount: number) => (amount > 0 ? '' : 'Amount should be greater than 0'),
         });
 }, []);
-
 ```
+</details>
