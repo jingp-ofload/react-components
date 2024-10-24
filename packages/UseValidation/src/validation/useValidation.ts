@@ -114,7 +114,9 @@ const useValidation = <TValidatorsMap extends ValidatorsMap>(formData: Record<st
 
         if (typeof validator === 'object') {
             try {
-                validator.validateSync(valueToValidate);
+                validator.validateSync(valueToValidate, {
+                    context: formData,
+                });
                 return '';
             } catch (err: any) {
                 return err.errors[0];
